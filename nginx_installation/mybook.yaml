@@ -1,0 +1,34 @@
+---
+- name: nginx
+  hosts: localhost
+  become: true # sudo access
+  become_user: root
+  tasks:
+    - name: Install nginx
+      apt:
+        name: nginx
+        state: present
+        
+    - name: Enable and start Nginx
+      systemd:
+        name: nginx
+        enabled: yes
+        
+    - name: Download Nginx conf
+      get_url:
+        url: https://gist.githubusercontent.com/nishantmodak/d08aae033775cb1a0f8a/raw/ebea0ae66e0a0188009accae2acba88cc646ddcd/nginx.conf.default
+        dest: /etc/nginx/nginx.conf
+        mode: "0644"
+      register: service_conf
+      
+    - name: Verify Nginx conf
+      command: nginx -t
+      changed_when: true
+      register: service_conf_validation
+      when: service_conf.changed
+
+    - name: Restart Nginx service
+      service: 
+        name: nginx
+        state: restarted
+      when: service_conf_validation.changed
